@@ -1,15 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { useState, useMemo } from 'react';
-import { useAllHolidays } from '@/hooks/useHolidays';
-import { format, parseISO, isSameDay } from 'date-fns';
+import { useCalendarData, ApprovedLeave } from '@/hooks/useHolidays';
+import { format, parseISO, isWithinInterval, eachDayOfInterval } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export function TeamCalendarPage() {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const currentYear = date?.getFullYear() || new Date().getFullYear();
   
-  const { publicHolidays, optionalHolidays, isLoading } = useAllHolidays(currentYear);
+  const { publicHolidays, optionalHolidays, approvedLeaves, isLoading } = useCalendarData(currentYear);
 
   // Create date sets for quick lookup
   const publicHolidayDates = useMemo(() => 
@@ -22,19 +23,40 @@ export function TeamCalendarPage() {
     [optionalHolidays]
   );
 
-  // Get holiday name for selected date
-  const selectedDateHoliday = useMemo(() => {
+  // Create a set of all dates with approved leaves
+  const approvedLeaveDates = useMemo(() => {
+    const dates = new Set<string>();
+    approvedLeaves.forEach(leave => {
+      const start = parseISO(leave.start_date);
+      const end = parseISO(leave.end_date);
+      eachDayOfInterval({ start, end }).forEach(day => {
+        dates.add(format(day, 'yyyy-MM-dd'));
+      });
+    });
+    return dates;
+  }, [approvedLeaves]);
+
+  // Get info for selected date
+  const selectedDateInfo = useMemo(() => {
     if (!date) return null;
     const dateStr = format(date, 'yyyy-MM-dd');
     
     const publicHoliday = publicHolidays.find(h => h.date === dateStr);
-    if (publicHoliday) return { ...publicHoliday, type: 'public' as const };
-    
     const optionalHoliday = optionalHolidays.find(h => h.date === dateStr);
-    if (optionalHoliday) return { ...optionalHoliday, type: 'optional' as const };
     
-    return null;
-  }, [date, publicHolidays, optionalHolidays]);
+    // Find all leaves that include this date
+    const leavesOnDate = approvedLeaves.filter(leave => {
+      const start = parseISO(leave.start_date);
+      const end = parseISO(leave.end_date);
+      return isWithinInterval(date, { start, end });
+    });
+
+    return {
+      publicHoliday,
+      optionalHoliday,
+      leaves: leavesOnDate,
+    };
+  }, [date, publicHolidays, optionalHolidays, approvedLeaves]);
 
   // Custom modifiers for the calendar
   const modifiers = useMemo(() => ({
@@ -44,14 +66,30 @@ export function TeamCalendarPage() {
     },
     optionalHoliday: (day: Date) => {
       const dateStr = format(day, 'yyyy-MM-dd');
-      return optionalHolidayDates.has(dateStr);
+      return optionalHolidayDates.has(dateStr) && !publicHolidayDates.has(dateStr);
     },
-  }), [publicHolidayDates, optionalHolidayDates]);
+    approvedLeave: (day: Date) => {
+      const dateStr = format(day, 'yyyy-MM-dd');
+      return approvedLeaveDates.has(dateStr) && 
+             !publicHolidayDates.has(dateStr) && 
+             !optionalHolidayDates.has(dateStr);
+    },
+  }), [publicHolidayDates, optionalHolidayDates, approvedLeaveDates]);
 
   const modifiersClassNames = {
     publicHoliday: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
     optionalHoliday: 'bg-yellow-500 text-yellow-950 hover:bg-yellow-500/90',
+    approvedLeave: 'bg-primary text-primary-foreground hover:bg-primary/90',
   };
+
+  // Get upcoming leaves
+  const upcomingLeaves = useMemo(() => {
+    const today = new Date();
+    return approvedLeaves
+      .filter(l => parseISO(l.end_date) >= today)
+      .sort((a, b) => parseISO(a.start_date).getTime() - parseISO(b.start_date).getTime())
+      .slice(0, 5);
+  }, [approvedLeaves]);
 
   return (
     <div className="space-y-6">
@@ -70,7 +108,7 @@ export function TeamCalendarPage() {
           <CardContent className="flex justify-center">
             {isLoading ? (
               <div className="h-[300px] flex items-center justify-center">
-                <span className="text-muted-foreground">Loading holidays...</span>
+                <span className="text-muted-foreground">Loading calendar...</span>
               </div>
             ) : (
               <Calendar
@@ -99,61 +137,74 @@ export function TeamCalendarPage() {
                 <div className="h-6 w-6 rounded bg-yellow-500" />
                 <span className="text-sm">Optional Holiday</span>
               </div>
+              <div className="flex items-center gap-3">
+                <div className="h-6 w-6 rounded bg-primary" />
+                <span className="text-sm">Team Leave</span>
+              </div>
             </CardContent>
           </Card>
 
-          {selectedDateHoliday && (
+          {selectedDateInfo && (selectedDateInfo.publicHoliday || selectedDateInfo.optionalHoliday || selectedDateInfo.leaves.length > 0) && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Selected Date</CardTitle>
+                <CardTitle className="text-lg">
+                  {date && format(date, 'MMMM d, yyyy')}
+                </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">
-                    {date && format(date, 'MMMM d, yyyy')}
-                  </p>
+              <CardContent className="space-y-3">
+                {selectedDateInfo.publicHoliday && (
                   <div className="flex items-center gap-2">
-                    <Badge 
-                      variant={selectedDateHoliday.type === 'public' ? 'destructive' : 'secondary'}
-                      className={selectedDateHoliday.type === 'optional' ? 'bg-yellow-500 text-yellow-950 hover:bg-yellow-500/90' : ''}
-                    >
-                      {selectedDateHoliday.type === 'public' ? 'Public' : 'Optional'}
-                    </Badge>
-                    <span className="font-medium">{selectedDateHoliday.name}</span>
+                    <Badge variant="destructive">Public Holiday</Badge>
+                    <span className="text-sm font-medium">{selectedDateInfo.publicHoliday.name}</span>
                   </div>
-                </div>
+                )}
+                {selectedDateInfo.optionalHoliday && (
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-yellow-500 text-yellow-950 hover:bg-yellow-500/90">Optional</Badge>
+                    <span className="text-sm font-medium">{selectedDateInfo.optionalHoliday.name}</span>
+                  </div>
+                )}
+                {selectedDateInfo.leaves.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Team members on leave:</p>
+                    {selectedDateInfo.leaves.map(leave => (
+                      <div key={leave.id} className="flex items-center gap-2">
+                        <Badge variant="default">{leave.leave_type}</Badge>
+                        <span className="text-sm">{leave.employee_name}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Upcoming Holidays</CardTitle>
+              <CardTitle className="text-lg">Upcoming Team Leaves</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3 max-h-[300px] overflow-y-auto">
-                {[...publicHolidays, ...optionalHolidays]
-                  .filter(h => parseISO(h.date) >= new Date())
-                  .sort((a, b) => parseISO(a.date).getTime() - parseISO(b.date).getTime())
-                  .slice(0, 5)
-                  .map((holiday) => {
-                    const isPublic = publicHolidays.some(h => h.id === holiday.id);
-                    return (
-                      <div key={holiday.id} className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
-                          <div className={`h-2 w-2 rounded-full ${isPublic ? 'bg-destructive' : 'bg-yellow-500'}`} />
-                          <span>{holiday.name}</span>
-                        </div>
-                        <span className="text-muted-foreground">
-                          {format(parseISO(holiday.date), 'MMM d')}
-                        </span>
+              <ScrollArea className="h-[200px]">
+                <div className="space-y-3">
+                  {upcomingLeaves.map(leave => (
+                    <div key={leave.id} className="flex flex-col gap-1 text-sm border-b pb-2 last:border-0">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium">{leave.employee_name}</span>
+                        <Badge variant="outline" className="text-xs">
+                          {leave.days} day{leave.days > 1 ? 's' : ''}
+                        </Badge>
                       </div>
-                    );
-                  })}
-                {publicHolidays.length === 0 && optionalHolidays.length === 0 && (
-                  <p className="text-sm text-muted-foreground">No holidays configured</p>
-                )}
-              </div>
+                      <span className="text-muted-foreground text-xs">
+                        {format(parseISO(leave.start_date), 'MMM d')}
+                        {leave.start_date !== leave.end_date && ` - ${format(parseISO(leave.end_date), 'MMM d')}`}
+                      </span>
+                    </div>
+                  ))}
+                  {upcomingLeaves.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No upcoming team leaves</p>
+                  )}
+                </div>
+              </ScrollArea>
             </CardContent>
           </Card>
         </div>
