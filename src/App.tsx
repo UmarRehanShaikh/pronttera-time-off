@@ -17,6 +17,7 @@ import { HistoryPage } from "./pages/HistoryPage";
 import { PendingRequestsPage } from "./pages/PendingRequestsPage";
 import { TeamCalendarPage } from "./pages/TeamCalendarPage";
 import { UserManagementPage } from "./pages/admin/UserManagementPage";
+import { HolidayManagementPage } from "./pages/admin/HolidayManagementPage";
 import { ReportsPage } from "./pages/admin/ReportsPage";
 import { SettingsPage } from "./pages/admin/SettingsPage";
 
@@ -47,6 +48,7 @@ const App = () => (
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/apply-leave" element={<ApplyLeavePage />} />
               <Route path="/history" element={<HistoryPage />} />
+              <Route path="/team-calendar" element={<TeamCalendarPage />} />
 
               {/* Manager Routes */}
               <Route
@@ -57,14 +59,6 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
-              <Route
-                path="/team-calendar"
-                element={
-                  <ProtectedRoute allowedRoles={['manager', 'admin']}>
-                    <TeamCalendarPage />
-                  </ProtectedRoute>
-                }
-              />
 
               {/* Admin Routes */}
               <Route
@@ -72,6 +66,14 @@ const App = () => (
                 element={
                   <ProtectedRoute allowedRoles={['admin']}>
                     <UserManagementPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/holidays"
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <HolidayManagementPage />
                   </ProtectedRoute>
                 }
               />

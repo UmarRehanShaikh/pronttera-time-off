@@ -7,10 +7,12 @@ import {
   Calendar,
   Settings,
   FileText,
-  LogOut
+  LogOut,
+  CalendarDays
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePendingRequests } from '@/hooks/useLeaveRequests';
 import {
   Sidebar,
   SidebarContent,
@@ -26,16 +28,22 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 
 export function AppSidebar() {
   const { profile, role, signOut, isAdmin, isManager } = useAuth();
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
+  const { data: pendingRequests } = usePendingRequests();
+  const pendingCount = pendingRequests?.length || 0;
 
   const employeeItems = [
-    { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
-    { title: 'Apply Leave', url: '/apply-leave', icon: CalendarPlus },
-    { title: 'Leave History', url: '/history', icon: History },
+    ...(isAdmin ? [] : [
+      { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
+      { title: 'Apply Leave', url: '/apply-leave', icon: CalendarPlus },
+      { title: 'Leave History', url: '/history', icon: History },
+      { title: 'Team Calendar', url: '/team-calendar', icon: Calendar }
+    ])
   ];
 
   const managerItems = [
@@ -45,6 +53,7 @@ export function AppSidebar() {
 
   const adminItems = [
     { title: 'User Management', url: '/admin/users', icon: Users },
+    { title: 'Holiday Management', url: '/admin/holidays', icon: CalendarDays },
     { title: 'Reports', url: '/admin/reports', icon: FileText },
     { title: 'Settings', url: '/admin/settings', icon: Settings },
   ];
@@ -79,27 +88,29 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {employeeItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild tooltip={item.title}>
-                    <NavLink 
-                      to={item.url} 
-                      className="flex items-center gap-2"
-                      activeClassName="bg-sidebar-accent text-sidebar-accent-foreground"
-                    >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {employeeItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {employeeItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild tooltip={item.title}>
+                      <NavLink 
+                        to={item.url} 
+                        className="flex items-center gap-2"
+                        activeClassName="bg-sidebar-accent text-sidebar-accent-foreground"
+                      >
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         {(isManager || isAdmin) && (
           <SidebarGroup>
@@ -116,6 +127,11 @@ export function AppSidebar() {
                       >
                         <item.icon className="h-4 w-4" />
                         <span>{item.title}</span>
+                        {item.title === 'Pending Requests' && pendingCount > 0 && (
+                          <Badge variant="destructive" className="ml-auto h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                            {pendingCount > 99 ? '99+' : pendingCount}
+                          </Badge>
+                        )}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
