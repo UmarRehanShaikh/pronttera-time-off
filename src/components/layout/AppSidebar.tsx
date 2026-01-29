@@ -54,7 +54,7 @@ export function AppSidebar() {
   const adminItems = [
     { title: 'User Management', url: '/admin/users', icon: Users },
     { title: 'Holiday Management', url: '/admin/holidays', icon: CalendarDays },
-    { title: 'Reports', url: '/admin/reports', icon: FileText },
+    // { title: 'Reports', url: '/admin/reports', icon: FileText },
     { title: 'Settings', url: '/admin/settings', icon: Settings },
   ];
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Table,
@@ -13,10 +13,15 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, UserCog } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Plus, UserCog, Trash2 } from 'lucide-react';
 import { Profile, AppRole } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
 
 export function UserManagementPage() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
   const { data: profiles, isLoading } = useQuery({
     queryKey: ['admin-profiles'],
     queryFn: async () => {
@@ -27,6 +32,35 @@ export function UserManagementPage() {
 
       if (error) throw error;
       return data as Profile[];
+    },
+  });
+
+  // Delete user mutation
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      // First delete user's leave requests
+      await supabase.from('leave_requests').delete().eq('user_id', userId);
+      
+      // Then delete user's leave ledger
+      await supabase.from('leave_ledger').delete().eq('user_id', userId);
+      
+      // Finally delete the user's profile
+      const { error } = await supabase.from('profiles').delete().eq('id', userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
+      toast({
+        title: 'User Deleted',
+        description: 'User has been successfully removed from the system.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Delete Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
     },
   });
 
@@ -113,9 +147,43 @@ export function UserManagementPage() {
                         {new Date(profile.created_at).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">
-                          Edit
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              disabled={deleteUserMutation.isPending}
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Delete
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete User</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete {profile.first_name} {profile.last_name}? 
+                                This action will permanently remove:
+                                <ul className="list-disc list-inside mt-2 space-y-1">
+                                  <li>User profile and account</li>
+                                  <li>All leave requests</li>
+                                  <li>Leave balance records</li>
+                                </ul>
+                                This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteUserMutation.mutate(profile.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Delete User
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </TableCell>
                     </TableRow>
                   ))}

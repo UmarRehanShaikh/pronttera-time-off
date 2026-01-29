@@ -4,6 +4,79 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LeaveRequest, LeaveType, LeaveStatus } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
+// Client-side deduction function
+async function performClientSideDeduction(requestId: string) {
+  // Get the approved leave request details
+  const { data: request, error: fetchError } = await supabase
+    .from('leave_requests')
+    .select('*')
+    .eq('id', requestId)
+    .single();
+
+  if (fetchError) throw fetchError;
+  if (request.status !== 'approved') throw new Error('Request is not approved');
+
+  // Get current year and quarter
+  const currentYear = new Date(request.start_date).getFullYear();
+  const currentQuarter = Math.ceil((new Date(request.start_date).getMonth() + 1) / 3);
+
+  // Get or create the user's leave ledger
+  const { data: ledger, error: ledgerError } = await supabase
+    .from('leave_ledger')
+    .select('*')
+    .eq('user_id', request.user_id)
+    .eq('year', currentYear)
+    .maybeSingle();
+
+  if (ledgerError) throw ledgerError;
+
+  // Create ledger if it doesn't exist
+  if (!ledger) {
+    const { error: insertError } = await supabase
+      .from('leave_ledger')
+      .insert({
+        user_id: request.user_id,
+        year: currentYear,
+        q1: 5, q2: 5, q3: 5, q4: 5,
+        carried_from_last_year: 0,
+        optional_used: 0
+      });
+
+    if (insertError) throw insertError;
+  }
+
+  // Perform deduction based on leave type
+  if (request.leave_type === 'general') {
+    const updateData: any = {};
+    switch (currentQuarter) {
+      case 1: updateData.q1 = Math.max(0, (ledger?.q1 || 5) - request.days); break;
+      case 2: updateData.q2 = Math.max(0, (ledger?.q2 || 5) - request.days); break;
+      case 3: updateData.q3 = Math.max(0, (ledger?.q3 || 5) - request.days); break;
+      case 4: updateData.q4 = Math.max(0, (ledger?.q4 || 5) - request.days); break;
+    }
+
+    const { error: updateError } = await supabase
+      .from('leave_ledger')
+      .update(updateData)
+      .eq('user_id', request.user_id)
+      .eq('year', currentYear);
+
+    if (updateError) throw updateError;
+  } else if (request.leave_type === 'optional') {
+    const { error: updateError } = await supabase
+      .from('leave_ledger')
+      .update({
+        optional_used: (ledger?.optional_used || 0) + request.days
+      })
+      .eq('user_id', request.user_id)
+      .eq('year', currentYear);
+
+    if (updateError) throw updateError;
+  }
+
+  console.log(`Client-side deduction completed: ${request.days} days deducted for ${request.leave_type} leave`);
+}
+
 interface CreateLeaveRequest {
   start_date: string;
   end_date: string;
@@ -131,10 +204,32 @@ export function useLeaveDecision() {
       if (error) throw error;
       return data;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: async (result, variables) => {
+      // Invalidate queries immediately
       queryClient.invalidateQueries({ queryKey: ['pending-requests'] });
       queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
+      
+      // If leave was approved, perform client-side deduction
+      if (variables.status === 'approved') {
+        try {
+          await performClientSideDeduction(variables.requestId);
+        } catch (error) {
+          console.error('Client-side deduction failed:', error);
+          toast({
+            title: 'Deduction Warning',
+            description: 'Leave was approved but automatic deduction failed. Please check balance manually.',
+            variant: 'destructive',
+          });
+        }
+      }
+      
+      // Wait a moment for any database trigger to complete, then refresh balance
+      await new Promise(resolve => setTimeout(resolve, 500));
       queryClient.invalidateQueries({ queryKey: ['leave-balance'] });
+      
+      // Trigger custom event to refresh stats
+      window.dispatchEvent(new CustomEvent('refresh-stats'));
+      
       toast({
         title: `Leave ${variables.status}`,
         description: `The leave request has been ${variables.status}.`,

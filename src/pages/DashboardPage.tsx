@@ -2,6 +2,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { QuickStatsCard } from '@/components/dashboard/QuickStatsCard';
 import { LeaveBalanceCard } from '@/components/dashboard/LeaveBalanceCard';
 import { RecentRequestsCard } from '@/components/dashboard/RecentRequestsCard';
+import { LeaveDeductionDebugPanel } from '@/components/debug/LeaveDeductionDebugPanel';
 
 export function DashboardPage() {
   const { profile } = useAuth();
@@ -23,6 +24,8 @@ export function DashboardPage() {
         <LeaveBalanceCard />
         <RecentRequestsCard />
       </div>
+
+      <LeaveDeductionDebugPanel />
     </div>
   );
 }
