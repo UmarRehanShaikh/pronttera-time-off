@@ -17,6 +17,7 @@ import { HistoryPage } from "./pages/HistoryPage";
 import { PendingRequestsPage } from "./pages/PendingRequestsPage";
 import { TeamCalendarPage } from "./pages/TeamCalendarPage";
 import { UserManagementPage } from "./pages/admin/UserManagementPage";
+import LeaveManagementPage from "./pages/admin/LeaveManagementPage";
 import { HolidayManagementPage } from "./pages/admin/HolidayManagementPage";
 import { ReportsPage } from "./pages/admin/ReportsPage";
 import { SettingsPage } from "./pages/admin/SettingsPage";
@@ -66,6 +67,14 @@ const App = () => (
                 element={
                   <ProtectedRoute allowedRoles={['admin']}>
                     <UserManagementPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/leave-management"
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <LeaveManagementPage />
                   </ProtectedRoute>
                 }
               />
