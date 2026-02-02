@@ -22,6 +22,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import Orb from "@/components/Orb";
 
 const formSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -63,63 +64,92 @@ export function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4">
-            <img src="/logo.png" alt="Pronttera Logo" className="h-14 w-auto" />
-          </div>
-          <CardTitle className="text-3xl">Welcome</CardTitle>
-          <CardDescription className="text-2xl">
-            Even vacations need approval.{" "}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Employee ID</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="email"
-                        placeholder="Employee ID"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+    <div className="flex min-h-screen items-center justify-center p-4 relative bg-black">
+      {/* Orb Background */}
+      <div className="absolute inset-0">
+        <Orb
+          hoverIntensity={0}
+          rotateOnHover
+          hue={0}
+          forceHoverState={false}
+          backgroundColor="#000000"
+        />
+      </div>
 
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Passcode</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="Enter the Passcode"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+      {/* Login Card */}
+      <div className="relative z-10">
+        <Card className="w-full max-w-md backdrop-blur-sm bg-white/95 shadow-2xl">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4">
+              <img
+                src="/logo.png"
+                alt="Pronttera Logo"
+                className="h-14 w-auto"
               />
+            </div>
+            <CardTitle className="text-3xl text-gray-800">Welcome</CardTitle>
+            <CardDescription className="text-xl text-gray-600">
+              Even vacations need approval.{" "}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-4"
+              >
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700">
+                        Employee ID
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          type="email"
+                          placeholder="Employee ID"
+                          className="bg-white/90"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Signing in..." : "Sign in"}
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700">Passcode</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="password"
+                          placeholder="Enter the Passcode"
+                          className="bg-white/90"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <Button
+                  type="submit"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Signing in..." : "Sign in"}
+                </Button>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
