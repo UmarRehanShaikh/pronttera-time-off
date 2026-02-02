@@ -3,6 +3,7 @@ import {
   CalendarPlus, 
   History, 
   Users, 
+  User,
   ClipboardCheck, 
   Calendar,
   Settings,
@@ -42,7 +43,8 @@ export function AppSidebar() {
     ...(isAdmin ? [] : [
       { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
       { title: 'Apply Leave', url: '/apply-leave', icon: CalendarPlus },
-      { title: 'Leave History', url: '/history', icon: History }
+      { title: 'Leave History', url: '/history', icon: History },
+      { title: 'ID Card', url: '/id-card', icon: User }
     ])
   ];
 
@@ -53,9 +55,9 @@ export function AppSidebar() {
 
   const adminItems = [
     { title: 'Dashboard', url: '/admin/dashboard', icon: Home },
-    { title: 'User Management', url: '/admin/users', icon: Users },
-    { title: 'Leave Management', url: '/admin/leave-management', icon: Calendar },
-    { title: 'Holiday Management', url: '/admin/holidays', icon: CalendarDays },
+    { title: 'Employee Directory', url: '/admin/users', icon: Users },
+    { title: 'Approved Leaves', url: '/admin/leave-management', icon: Calendar },
+    { title: 'Company Holidays', url: '/admin/holidays', icon: CalendarDays },
     // { title: 'Reports', url: '/admin/reports', icon: FileText },
     { title: 'Settings', url: '/admin/settings', icon: Settings },
   ];

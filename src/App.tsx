@@ -14,6 +14,7 @@ import { SignupPage } from "./pages/auth/SignupPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { ApplyLeavePage } from "./pages/ApplyLeavePage";
 import { HistoryPage } from "./pages/HistoryPage";
+import IDCardPage from "./pages/IDCardPage";
 import { PendingRequestsPage } from "./pages/PendingRequestsPage";
 import { TeamCalendarPage } from "./pages/TeamCalendarPage";
 import { UserManagementPage } from "./pages/admin/UserManagementPage";
@@ -50,6 +51,7 @@ const App = () => (
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/apply-leave" element={<ApplyLeavePage />} />
               <Route path="/history" element={<HistoryPage />} />
+              <Route path="/id-card" element={<IDCardPage />} />
               <Route path="/team-calendar" element={<TeamCalendarPage />} />
 
               {/* Manager Routes */}

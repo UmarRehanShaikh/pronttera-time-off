@@ -25,13 +25,40 @@ export function UserManagementPage() {
   const { data: profiles, isLoading } = useQuery({
     queryKey: ['admin-profiles'],
     queryFn: async () => {
+      // Get user roles to filter out admins
+      const { data: userRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
+
+      if (rolesError) throw rolesError;
+
+      // Get admin user IDs
+      const adminUserIds = userRoles?.filter(ur => ur.role === 'admin').map(ur => ur.user_id) || [];
+
+      // Get profiles excluding admins
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
+        .not('user_id', 'in', `(${adminUserIds.join(',')})`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       return data as Profile[];
+    },
+  });
+
+  // Fetch leave balances for all employees
+  const { data: leaveBalances } = useQuery({
+    queryKey: ['leave-balances'],
+    queryFn: async () => {
+      const currentYear = new Date().getFullYear();
+      const { data, error } = await supabase
+        .from('leave_ledger')
+        .select('*')
+        .eq('year', currentYear);
+
+      if (error) throw error;
+      return data;
     },
   });
 
@@ -70,6 +97,17 @@ export function UserManagementPage() {
       case 'manager': return 'secondary';
       default: return 'outline';
     }
+  };
+
+  // Helper function to get leave balance for a user
+  const getLeaveBalance = (userId: string) => {
+    const balance = leaveBalances?.find(ledger => ledger.user_id === userId);
+    if (!balance) return { total: 0, optional: 4 };
+    
+    const total = balance.q1 + balance.q2 + balance.q3 + balance.q4 + balance.carried_from_last_year;
+    const optional = 4 - balance.optional_used;
+    
+    return { total, optional };
   };
 
   if (isLoading) {
@@ -126,39 +164,53 @@ export function UserManagementPage() {
                     <TableHead>Email</TableHead>
                     <TableHead>Department</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Available Leaves</TableHead>
+                    <TableHead>Optional Holidays</TableHead>
                     <TableHead>Joined</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {profiles.map((profile) => (
-                    <TableRow key={profile.id}>
-                      <TableCell className="font-medium">
-                        {profile.first_name} {profile.last_name}
-                      </TableCell>
-                      <TableCell>{profile.email}</TableCell>
-                      <TableCell>{profile.department || '-'}</TableCell>
-                      <TableCell>
-                        <Badge variant={profile.is_active ? 'default' : 'secondary'}>
-                          {profile.is_active ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {new Date(profile.created_at).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              disabled={deleteUserMutation.isPending}
-                            >
-                              <Trash2 className="h-4 w-4 mr-1" />
-                              Delete
-                            </Button>
-                          </AlertDialogTrigger>
+                  {profiles.map((profile) => {
+                    const leaveBalance = getLeaveBalance(profile.user_id);
+                    return (
+                      <TableRow key={profile.id}>
+                        <TableCell className="font-medium">
+                          {profile.first_name} {profile.last_name}
+                        </TableCell>
+                        <TableCell>{profile.email}</TableCell>
+                        <TableCell>{profile.department || '-'}</TableCell>
+                        <TableCell>
+                          <Badge variant={profile.is_active ? 'default' : 'secondary'}>
+                            {profile.is_active ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-medium text-green-600">
+                            {leaveBalance.total} days
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-medium text-blue-600">
+                            {leaveBalance.optional} days
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {new Date(profile.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                disabled={deleteUserMutation.isPending}
+                              >
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                Delete
+                              </Button>
+                            </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
                               <AlertDialogTitle>Delete User</AlertDialogTitle>
@@ -186,7 +238,8 @@ export function UserManagementPage() {
                         </AlertDialog>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
