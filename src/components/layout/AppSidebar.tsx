@@ -41,8 +41,7 @@ export function AppSidebar() {
     ...(isAdmin ? [] : [
       { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
       { title: 'Apply Leave', url: '/apply-leave', icon: CalendarPlus },
-      { title: 'Leave History', url: '/history', icon: History },
-      { title: 'Team Calendar', url: '/team-calendar', icon: Calendar }
+      { title: 'Leave History', url: '/history', icon: History }
     ])
   ];
 

@@ -15,6 +15,7 @@ interface LeaveRequest {
   profiles?: {
     first_name?: string;
     last_name?: string;
+    department?: string;
   } | null;
 }
 
@@ -63,11 +64,13 @@ export function TeamCalendarPage() {
 
       const { data: leaves, error: leaveError } = await leaveQuery;
 
+      console.log('Debug - Leave query result:', leaves?.length, 'leaves found');
+
       // Fetch profile information separately
       const userIds = leaves?.map(leave => leave.user_id) || [];
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('user_id, first_name, last_name')
+        .select('user_id, first_name, last_name, department')
         .in('user_id', userIds);
 
       // Combine leaves with profiles
@@ -111,26 +114,23 @@ export function TeamCalendarPage() {
   const getModifiers = () => {
     const modifiers: Record<string, Date[]> = {
       approved: [],
-      rejected: [],
-      pending: [],
       publicHoliday: [],
       optionalHoliday: []
     };
 
-    // Only add leave modifiers for non-admin users
-    if (!isManager && !isAdmin) {
-      leaveRequests.forEach(leave => {
+    // Add leave modifiers for approved leaves only
+    leaveRequests.forEach(leave => {
+      if (leave.status === 'approved') {
         const startDate = new Date(leave.start_date);
         const endDate = new Date(leave.end_date);
         
+        // Add each day in the leave range to the modifiers
         for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
           const dateStr = d.toISOString().split('T')[0];
-          if (leave.status === 'approved') {
-            modifiers.approved.push(new Date(dateStr));
-          }
+          modifiers.approved.push(new Date(dateStr));
         }
-      });
-    }
+      }
+    });
 
     // Add holiday modifiers
     holidays.forEach(holiday => {
@@ -171,17 +171,13 @@ export function TeamCalendarPage() {
               <span className="text-sm">Public Holiday</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-amber-500 rounded"></div>
+              <div className="w-4 h-4 bg-violet-500 rounded"></div>
               <span className="text-sm">Optional Holiday</span>
             </div>
-            {!(isManager || isAdmin) && (
-              <>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-green-600 rounded"></div>
-                  <span className="text-sm">Approved Leave</span>
-                </div>
-              </>
-            )}
+            <div className="flex items-center gap-2">
+              <div className={`w-4 h-4 ${isManager || isAdmin ? 'bg-red-600' : 'bg-green-600'} rounded`}></div>
+              <span className="text-sm">Approved Leave</span>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -199,26 +195,22 @@ export function TeamCalendarPage() {
             className="rounded-md border pointer-events-auto"
             modifiers={{
               approved: modifiers.approved,
-              rejected: modifiers.rejected,
-              pending: modifiers.pending,
               publicHoliday: modifiers.publicHoliday,
               optionalHoliday: modifiers.optionalHoliday
             }}
             modifiersStyles={{
-              ...( !isManager && !isAdmin ? {
-                approved: { 
-                  backgroundColor: '#16a34a', // green-600
-                  color: 'white',
-                  fontWeight: 'bold'
-                }
-              } : {}),
+              approved: { 
+                backgroundColor: isManager || isAdmin ? '#dc2626' : '#16a34a',
+                color: 'white',
+                fontWeight: 'bold'
+              },
               publicHoliday: { 
-                backgroundColor: '#3b82f6', // blue-500
+                backgroundColor: '#3b82f6',
                 color: 'white',
                 fontWeight: 'bold'
               },
               optionalHoliday: { 
-                backgroundColor: '#f59e0b', // amber-500
+                backgroundColor: '#8b5cf6',
                 color: 'white',
                 fontWeight: 'bold'
               }
@@ -232,72 +224,100 @@ export function TeamCalendarPage() {
         <Card>
           <CardHeader>
             <CardTitle>
-              Details for {date.toLocaleDateString()}
+              Employees on Leave - {date.toLocaleDateString()}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {/* Holidays on selected date */}
-              {holidays
-                .filter(holiday => 
-                  new Date(holiday.date).toDateString() === date.toDateString()
-                )
-                .map(holiday => (
-                  <div key={holiday.id} className="flex items-center gap-2">
+            {/* Holidays on selected date */}
+            {holidays
+              .filter(holiday => 
+                new Date(holiday.date).toDateString() === date.toDateString()
+              )
+              .map(holiday => (
+                <div key={holiday.id} className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center gap-2">
                     <Badge 
                       variant={holiday.type === 'public' ? 'default' : 'secondary'}
                     >
                       {holiday.type === 'public' ? 'Public' : 'Optional'} Holiday
                     </Badge>
-                    <span>{holiday.name}</span>
+                    <span className="font-medium">{holiday.name}</span>
                   </div>
-                ))
-              }
+                </div>
+              ))
+            }
 
-              {/* Leaves on selected date - Only show for non-admin users */}
-              {!(isManager || isAdmin) && leaveRequests
-                .filter(leave => {
-                  const startDate = new Date(leave.start_date);
-                  const endDate = new Date(leave.end_date);
-                  return date >= startDate && date <= endDate;
-                })
-                .map(leave => (
-                  <div key={leave.id} className="flex items-center gap-2">
-                    <Badge 
-                      variant={
-                        leave.status === 'approved' ? 'default' :
-                        leave.status === 'rejected' ? 'destructive' : 'secondary'
-                      }
-                    >
-                      {leave.status}
-                    </Badge>
-                    <span>
-                      {leave.profiles?.first_name} {leave.profiles?.last_name}
-                    </span>
-                    <span className="text-muted-foreground text-sm">
-                      {new Date(leave.start_date).toLocaleDateString()} - {new Date(leave.end_date).toLocaleDateString()}
-                    </span>
-                  </div>
-                ))
-              }
+            {/* Employees on leave */}
+            {(() => {
+              const employeesOnLeave = leaveRequests.filter(leave => {
+                if (leave.status !== 'approved') return false;
+                
+                const startDate = new Date(leave.start_date);
+                const endDate = new Date(leave.end_date);
+                const selectedDate = new Date(date);
+                
+                // Reset time to midnight for accurate date comparison
+                startDate.setHours(0, 0, 0, 0);
+                endDate.setHours(0, 0, 0, 0);
+                selectedDate.setHours(0, 0, 0, 0);
+                
+                // Check if selected date is within the leave range (inclusive)
+                return selectedDate >= startDate && selectedDate <= endDate;
+              });
 
-              {/* No events */}
-              {holidays.filter(holiday => 
+              return employeesOnLeave.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-gray-700 mb-3">Team Members on Leave:</h4>
+                  {employeesOnLeave.map(leave => (
+                    <div key={leave.id} className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                        <span className="font-medium text-gray-900">
+                          {leave.profiles?.first_name} {leave.profiles?.last_name}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-600 bg-white px-2 py-1 rounded">
+                          {leave.profiles?.department || 'No Department'}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {new Date(leave.start_date).toLocaleDateString()} - {new Date(leave.end_date).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
+            {/* No employees on leave */}
+            {(() => {
+              const employeesOnLeave = leaveRequests.filter(leave => {
+                if (leave.status !== 'approved') return false;
+                
+                const startDate = new Date(leave.start_date);
+                const endDate = new Date(leave.end_date);
+                const selectedDate = new Date(date);
+                
+                // Reset time to midnight for accurate date comparison
+                startDate.setHours(0, 0, 0, 0);
+                endDate.setHours(0, 0, 0, 0);
+                selectedDate.setHours(0, 0, 0, 0);
+                
+                return selectedDate >= startDate && selectedDate <= endDate;
+              });
+
+              const holidaysOnDate = holidays.filter(holiday => 
                 new Date(holiday.date).toDateString() === date.toDateString()
-              ).length === 0 &&
-              ((isManager || isAdmin) || 
-               leaveRequests.filter(leave => {
-                 const startDate = new Date(leave.start_date);
-                 const endDate = new Date(leave.end_date);
-                 return date >= startDate && date <= endDate;
-               }).length === 0) && (
-                <p className="text-muted-foreground">
-                  {holidays.filter(holiday => 
-                    new Date(holiday.date).toDateString() === date.toDateString()
-                  ).length === 0 ? 'No holidays or leaves on this date' : 'No holidays on this date'}
-                </p>
-              )}
-            </div>
+              );
+
+              return employeesOnLeave.length === 0 && holidaysOnDate.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <div className="text-lg mb-2">📅</div>
+                  <p>No employees on leave on this date</p>
+                </div>
+              );
+            })()}
           </CardContent>
         </Card>
       )}
