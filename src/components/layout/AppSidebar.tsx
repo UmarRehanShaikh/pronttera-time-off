@@ -77,13 +77,16 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold">
-            P
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg">
+            <img 
+              src="/logo.png" 
+              alt="Pronttera Connect" 
+              className="h-8 w-8 object-contain"
+            />
           </div>
           {!collapsed && (
             <div className="flex flex-col">
-              <span className="font-semibold text-sidebar-foreground">PLMS</span>
-              <span className="text-xs text-muted-foreground">Leave Management</span>
+              <span className="font-semibold text-sidebar-foreground">Pronttera Connect</span>
             </div>
           )}
         </div>
