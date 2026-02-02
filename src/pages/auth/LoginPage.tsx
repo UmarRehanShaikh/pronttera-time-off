@@ -4,8 +4,16 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import Orb from "@/components/Orb";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -14,15 +22,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
-import Orb from "@/components/Orb";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 const formSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -45,7 +46,7 @@ export function LoginPage() {
     },
   });
 
-  const onSubmit = async (values: FormValues) => {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     try {
       const { error } = await signIn(values.email, values.password);
@@ -56,7 +57,30 @@ export function LoginPage() {
           variant: "destructive",
         });
       } else {
-        navigate("/dashboard");
+        // Get user profile to check role
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('user_id')
+          .eq('email', values.email)
+          .single();
+        
+        if (profile) {
+          // Get user role
+          const { data: role } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', profile.user_id)
+            .single();
+          
+          // Redirect based on role
+          if (role?.role === 'admin') {
+            navigate("/admin/dashboard");
+          } else {
+            navigate("/dashboard");
+          }
+        } else {
+          navigate("/dashboard");
+        }
       }
     } finally {
       setIsLoading(false);

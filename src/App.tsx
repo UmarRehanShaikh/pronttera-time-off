@@ -18,6 +18,7 @@ import { PendingRequestsPage } from "./pages/PendingRequestsPage";
 import { TeamCalendarPage } from "./pages/TeamCalendarPage";
 import { UserManagementPage } from "./pages/admin/UserManagementPage";
 import LeaveManagementPage from "./pages/admin/LeaveManagementPage";
+import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import { HolidayManagementPage } from "./pages/admin/HolidayManagementPage";
 import { ReportsPage } from "./pages/admin/ReportsPage";
 import { SettingsPage } from "./pages/admin/SettingsPage";
@@ -62,6 +63,14 @@ const App = () => (
               />
 
               {/* Admin Routes */}
+              <Route
+                path="/admin/dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminDashboardPage />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/admin/users"
                 element={

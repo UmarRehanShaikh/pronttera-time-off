@@ -8,7 +8,8 @@ import {
   Settings,
   FileText,
   LogOut,
-  CalendarDays
+  CalendarDays,
+  Home
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -51,6 +52,7 @@ export function AppSidebar() {
   ];
 
   const adminItems = [
+    { title: 'Dashboard', url: '/admin/dashboard', icon: Home },
     { title: 'User Management', url: '/admin/users', icon: Users },
     { title: 'Leave Management', url: '/admin/leave-management', icon: Calendar },
     { title: 'Holiday Management', url: '/admin/holidays', icon: CalendarDays },
