@@ -2,11 +2,36 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import IDCard from '@/components/IDCard';
+import { PunchInOut } from '@/components/PunchInOut';
 import { Badge } from '@/components/ui/badge';
 import { User, Building, Calendar, Mail } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import './IDCardPage.css';
 
 export default function IDCardPage() {
   const { profile } = useAuth();
+
+  // Get user role
+  const { data: userRole } = useQuery({
+    queryKey: ['user-role', profile?.user_id],
+    queryFn: async () => {
+      if (!profile?.user_id) return null;
+      
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', profile.user_id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user role:', error);
+        return null;
+      }
+      
+      return data?.role;
+    },
+    enabled: !!profile?.user_id,
+  });
 
   if (!profile) {
     return (
@@ -69,9 +94,6 @@ export default function IDCardPage() {
                 <User className="h-5 w-5" />
                 Personal Information
               </CardTitle>
-              <CardDescription>
-                Your basic employee details
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -106,9 +128,6 @@ export default function IDCardPage() {
                 <Building className="h-5 w-5" />
                 Work Information
               </CardTitle>
-              <CardDescription>
-                Your employment details
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -118,7 +137,7 @@ export default function IDCardPage() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Role</label>
-                  <p className="text-lg">Employee</p>
+                  <p className="text-lg capitalize">{userRole || 'Not Assigned'}</p>
                 </div>
                 {profile.hire_date && (
                   <div>
@@ -146,51 +165,9 @@ export default function IDCardPage() {
             </CardContent>
           </Card>
 
-          {/* Card Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Card Information
-              </CardTitle>
-              <CardDescription>
-                Details about your ID card
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Card Type</label>
-                  <p className="text-lg">Employee ID Card</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Security Level</label>
-                  <p className="text-lg">Standard Access</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Issued Date</label>
-                  <p className="text-lg">
-                    {new Date().toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Valid Until</label>
-                  <p className="text-lg">
-                    {new Date(new Date().setFullYear(new Date().getFullYear() + 2)).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+          {/* Punch In/Out */}
+          <PunchInOut />
+          </div>
       </div>
     </div>
   );

@@ -31,6 +31,10 @@ export function PendingRequestsTable() {
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectDialog, setShowRejectDialog] = useState(false);
 
+  // Debug logging
+  console.log('PendingRequestsTable - requests:', requests);
+  console.log('PendingRequestsTable - isLoading:', isLoading);
+
   const handleApprove = async (requestId: string) => {
     await leaveDecision.mutateAsync({
       requestId,
@@ -89,6 +93,7 @@ export function PendingRequestsTable() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Employee</TableHead>
                     <TableHead>Date Range</TableHead>
                     <TableHead>Days</TableHead>
                     <TableHead>Type</TableHead>
@@ -98,8 +103,23 @@ export function PendingRequestsTable() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {requests.map((request) => (
+                  {requests.map((request) => {
+                    console.log('Processing request:', request);
+                    return (
                     <TableRow key={request.id}>
+                      <TableCell className="font-medium">
+                        <div>
+                          <div className="font-medium">
+                            {request.profiles?.first_name && request.profiles?.last_name 
+                              ? `${request.profiles.first_name} ${request.profiles.last_name}`
+                              : `User ID: ${request.user_id?.slice(-8) || 'Unknown'}`
+                            }
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {request.profiles?.department || 'No Department'}
+                          </div>
+                        </div>
+                      </TableCell>
                       <TableCell className="font-medium">
                         {format(new Date(request.start_date), 'MMM d')} -{' '}
                         {format(new Date(request.end_date), 'MMM d, yyyy')}
@@ -136,7 +156,8 @@ export function PendingRequestsTable() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

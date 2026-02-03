@@ -120,17 +120,42 @@ export function usePendingRequests() {
     queryFn: async (): Promise<LeaveRequest[]> => {
       if (!user?.id) throw new Error('No user ID');
 
-      let query = supabase
+      // First get the pending requests
+      const { data: requests, error: requestsError } = await supabase
         .from('leave_requests')
         .select('*')
         .eq('status', 'pending')
         .order('created_at', { ascending: true });
 
-      // Admins see all, managers see their team (handled by RLS)
-      const { data, error } = await query;
+      if (requestsError) {
+        console.error('Error fetching pending requests:', requestsError);
+        throw requestsError;
+      }
 
-      if (error) throw error;
-      return (data as LeaveRequest[]) || [];
+      if (!requests || requests.length === 0) {
+        return [];
+      }
+
+      // Then get the profiles for all users in the requests
+      const userIds = requests.map(req => req.user_id);
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, first_name, last_name, department')
+        .in('user_id', userIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        throw profilesError;
+      }
+
+      // Combine the data
+      const requestsWithProfiles = requests.map(request => ({
+        ...request,
+        profiles: profiles?.find(profile => profile.user_id === request.user_id) || null
+      }));
+      
+      console.log('Combined requests with profiles:', requestsWithProfiles);
+      return requestsWithProfiles as LeaveRequest[];
     },
     enabled: !!user?.id && (isManager || isAdmin),
   });

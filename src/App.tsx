@@ -16,13 +16,16 @@ import { ApplyLeavePage } from "./pages/ApplyLeavePage";
 import { HistoryPage } from "./pages/HistoryPage";
 import IDCardPage from "./pages/IDCardPage";
 import { PendingRequestsPage } from "./pages/PendingRequestsPage";
-import { TeamCalendarPage } from "./pages/TeamCalendarPage";
-import { UserManagementPage } from "./pages/admin/UserManagementPage";
-import LeaveManagementPage from "./pages/admin/LeaveManagementPage";
-import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
-import { HolidayManagementPage } from "./pages/admin/HolidayManagementPage";
-import { ReportsPage } from "./pages/admin/ReportsPage";
-import { SettingsPage } from "./pages/admin/SettingsPage";
+import TeamCalendarPage from "./pages/TeamCalendarPage";
+import AdminTeamCalendarPage from "./pages/AdminTeamCalendarPage";
+import AdminOriginalTeamCalendarPage from "./pages/AdminOriginalTeamCalendarPage";
+import { UserManagementPage } from './pages/admin/UserManagementPage';
+import AttendancePage from './pages/admin/AttendancePage';
+import LeaveManagementPage from './pages/admin/LeaveManagementPage';
+import AdminDashboardPage from './pages/admin/AdminDashboardPage';
+import { HolidayManagementPage } from './pages/admin/HolidayManagementPage';
+import { ReportsPage } from './pages/admin/ReportsPage';
+import { SettingsPage } from './pages/admin/SettingsPage';
 
 const queryClient = new QueryClient();
 
@@ -52,7 +55,14 @@ const App = () => (
               <Route path="/apply-leave" element={<ApplyLeavePage />} />
               <Route path="/history" element={<HistoryPage />} />
               <Route path="/id-card" element={<IDCardPage />} />
-              <Route path="/team-calendar" element={<TeamCalendarPage />} />
+              <Route
+                path="/team-calendar"
+                element={
+                  <ProtectedRoute allowedRoles={['employee', 'intern']}>
+                    <TeamCalendarPage />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Manager Routes */}
               <Route
@@ -60,6 +70,14 @@ const App = () => (
                 element={
                   <ProtectedRoute allowedRoles={['manager', 'admin']}>
                     <PendingRequestsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/team-calendar"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'manager']}>
+                    <AdminOriginalTeamCalendarPage />
                   </ProtectedRoute>
                 }
               />
@@ -78,6 +96,14 @@ const App = () => (
                 element={
                   <ProtectedRoute allowedRoles={['admin']}>
                     <UserManagementPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/attendance"
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AttendancePage />
                   </ProtectedRoute>
                 }
               />

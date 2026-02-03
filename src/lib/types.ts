@@ -1,5 +1,5 @@
 // App Role Types
-export type AppRole = 'admin' | 'manager' | 'employee';
+export type AppRole = 'admin' | 'manager' | 'employee' | 'intern';
 export type LeaveStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
 export type LeaveType = 'general' | 'optional';
 
@@ -55,6 +55,11 @@ export interface LeaveRequest {
   created_at: string;
   updated_at: string;
   // Joined fields
+  profiles?: {
+    first_name: string | null;
+    last_name: string | null;
+    department: string | null;
+  };
   user?: Profile;
   approver?: Profile;
 }
@@ -95,4 +100,41 @@ export interface LeaveBalance {
 export interface ApiResponse<T> {
   data: T | null;
   error: string | null;
+}
+
+// Punch In/Out Types
+export type PunchStatus = 'in' | 'out';
+
+export interface PunchRecord {
+  id: string;
+  user_id: string;
+  punch_type: PunchStatus;
+  punch_time: string;
+  location: string | null;
+  notes: string | null;
+  ip_address: string | null;
+  created_at: string;
+}
+
+export interface DailyAttendance {
+  date: string;
+  user_id: string;
+  punch_in: string | null;
+  punch_out: string | null;
+  total_hours: number | null;
+  status: 'present' | 'absent' | 'partial';
+  user?: Profile;
+}
+
+export interface AttendanceSummary {
+  user_id: string;
+  period_start: string;
+  period_end: string;
+  total_days: number;
+  present_days: number;
+  absent_days: number;
+  partial_days: number;
+  total_hours: number;
+  average_hours: number;
+  user?: Profile;
 }

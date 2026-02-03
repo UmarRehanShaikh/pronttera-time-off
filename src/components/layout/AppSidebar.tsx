@@ -10,7 +10,9 @@ import {
   FileText,
   LogOut,
   CalendarDays,
-  Home
+  Home,
+  Clock,
+  CreditCard
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -33,29 +35,31 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 
 export function AppSidebar() {
-  const { profile, role, signOut, isAdmin, isManager } = useAuth();
+  const { profile, role, signOut, isAdmin, isManager, isIntern } = useAuth();
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
   const { data: pendingRequests } = usePendingRequests();
   const pendingCount = pendingRequests?.length || 0;
 
   const employeeItems = [
-    ...(isAdmin ? [] : [
+    ...(isAdmin || isManager ? [] : [
       { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
       { title: 'Apply Leave', url: '/apply-leave', icon: CalendarPlus },
       { title: 'Leave History', url: '/history', icon: History },
-      { title: 'ID Card', url: '/id-card', icon: User }
+      { title: 'ID Card', url: '/id-card', icon: User },
+      { title: 'Team Calendar', url: '/team-calendar', icon: CalendarDays }
     ])
   ];
 
   const managerItems = [
     { title: 'Pending Requests', url: '/pending', icon: ClipboardCheck },
-    { title: 'Team Calendar', url: '/team-calendar', icon: Calendar },
+    { title: 'Team Calendar', url: '/admin/team-calendar', icon: CalendarDays },
   ];
 
   const adminItems = [
     { title: 'Dashboard', url: '/admin/dashboard', icon: Home },
     { title: 'Employee Directory', url: '/admin/users', icon: Users },
+    { title: 'Attendance', url: '/admin/attendance', icon: Calendar },
     { title: 'Approved Leaves', url: '/admin/leave-management', icon: Calendar },
     { title: 'Company Holidays', url: '/admin/holidays', icon: CalendarDays },
     // { title: 'Reports', url: '/admin/reports', icon: FileText },
@@ -71,6 +75,7 @@ export function AppSidebar() {
     switch (role) {
       case 'admin': return 'Admin';
       case 'manager': return 'Manager';
+      case 'intern': return 'Intern';
       default: return 'Employee';
     }
   };
