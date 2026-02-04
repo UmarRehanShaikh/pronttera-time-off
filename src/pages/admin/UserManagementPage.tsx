@@ -18,12 +18,13 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, UserCog, Trash2 } from 'lucide-react';
+import { Plus, UserCog, Trash2, IdCard } from 'lucide-react';
 import { Profile, AppRole } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import IDCard from '@/components/IDCard';
 
 // Extended type for database operations that includes intern role
 // NOTE: This is a temporary solution until the database schema is updated
@@ -43,6 +44,13 @@ export function UserManagementPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [selectedUserForIdCard, setSelectedUserForIdCard] = useState<Profile | null>(null);
+
+  // Generate employee ID number (same as in IDCardPage)
+  const generateEmployeeId = (profile: Profile) => {
+    const userId = profile.user_id?.slice(-8) || '00000000';
+    return `${userId.slice(0, 4)}-${userId.slice(4, 8)}-${profile.id?.slice(-4) || '0000'}`;
+  };
 
   // Form validation schema
   const formSchema = z.object({
@@ -463,18 +471,28 @@ export function UserManagementPage() {
                           {new Date(profile.created_at).toLocaleDateString()}
                         </TableCell>
                         <TableCell className="text-right">
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                disabled={deleteUserMutation.isPending}
-                              >
-                                <Trash2 className="h-4 w-4 mr-1" />
-                                Delete
-                              </Button>
-                            </AlertDialogTrigger>
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              onClick={() => setSelectedUserForIdCard(profile)}
+                            >
+                              <IdCard className="h-4 w-4 mr-1" />
+                              ID Card
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  disabled={deleteUserMutation.isPending}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-1" />
+                                  Delete
+                                </Button>
+                              </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
                               <AlertDialogTitle>Delete User</AlertDialogTitle>
@@ -500,6 +518,7 @@ export function UserManagementPage() {
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
+                          </div>
                       </TableCell>
                     </TableRow>
                     );
@@ -665,6 +684,25 @@ export function UserManagementPage() {
               </div>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ID Card Dialog */}
+      <Dialog open={!!selectedUserForIdCard} onOpenChange={() => setSelectedUserForIdCard(null)}>
+        <DialogContent className="max-w-4xl bg-transparent border-none shadow-none p-0">
+          {selectedUserForIdCard && (
+            <div className="flex justify-center">
+              <div className="id-card-wrapper">
+                <IDCard
+                  employeeName={`${selectedUserForIdCard.first_name} ${selectedUserForIdCard.last_name}`}
+                  employeeEmail={selectedUserForIdCard.email}
+                  employeeDepartment={selectedUserForIdCard.department || 'Not Assigned'}
+                  employeeId={generateEmployeeId(selectedUserForIdCard)}
+                  isActive={selectedUserForIdCard.is_active}
+                />
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

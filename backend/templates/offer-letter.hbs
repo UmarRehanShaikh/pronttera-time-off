@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offer Letter - {{candidateName}}</title>
+    <style>
+        @page {
+            margin: 2cm;
+            size: A4;
+        }
+        
+        body { 
+            font-family: 'Georgia', serif; 
+            line-height: 1.6; 
+            margin: 0; 
+            padding: 0; 
+            color: #2c3e50; 
+            background: white;
+        }
+        
+        .header { 
+            text-align: center; 
+            margin-bottom: 40px; 
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 20px;
+        }
+        
+        .header h1 { 
+            color: #2c3e50; 
+            margin: 0 0 10px 0; 
+            font-size: 28px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .header p { 
+            color: #7f8c8d; 
+            margin: 0;
+            font-size: 16px;
+        }
+        
+        .letter-body { 
+            max-width: 100%; 
+            margin: 0 auto; 
+        }
+        
+        .date { 
+            text-align: right; 
+            margin-bottom: 30px; 
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        .salutation { 
+            margin-bottom: 20px; 
+            font-size: 16px;
+        }
+        
+        .content { 
+            margin-bottom: 20px; 
+            font-size: 16px;
+            text-align: justify;
+        }
+        
+        .highlight { 
+            background: #f0f8ff; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin: 20px 0; 
+            border-left: 4px solid #3498db;
+        }
+        
+        .highlight strong {
+            color: #2c3e50;
+        }
+        
+        .terms { 
+            background: #f8f9fa; 
+            padding: 25px; 
+            border-radius: 8px; 
+            margin: 30px 0; 
+            border: 1px solid #e9ecef;
+        }
+        
+        .terms h3 {
+            color: #2c3e50;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        
+        .terms ol {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .terms li {
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        
+        .signature { 
+            margin-top: 60px; 
+        }
+        
+        .footer { 
+            text-align: center; 
+            margin-top: 40px; 
+            font-size: 12px; 
+            color: #7f8c8d; 
+            border-top: 1px solid #e9ecef;
+            padding-top: 20px;
+        }
+        
+        .company-info {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        @media print {
+            body { margin: 0; }
+            .header { page-break-after: avoid; }
+            .terms { page-break-inside: avoid; }
+            .signature { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Internship Offer Letter</h1>
+        <p>Pronttera Connect</p>
+        <p style="font-size: 14px; margin-top: 5px;">Technology Solutions Company</p>
+    </div>
+
+    <div class="letter-body">
+        <div class="date">
+            Date: {{letterDate}}
+        </div>
+
+        <div class="salutation">
+            Dear {{firstName}},
+        </div>
+
+        <div class="content">
+            <p>We are delighted to extend to you an offer for the position of <strong>{{position}}</strong> at Pronttera Connect. This internship opportunity will be based in <strong>{{city}}</strong>, and we believe it will provide you with valuable industry experience and professional growth.</p>
+            
+            <div class="highlight">
+                <strong>Internship Details:</strong><br>
+                <strong>Position:</strong> {{position}}<br>
+                <strong>Duration:</strong> {{duration}}<br>
+                <strong>Working Mode:</strong> {{workingMode}}<br>
+                <strong>Start Date:</strong> {{startDate}}<br>
+                <strong>Stipend:</strong> {{stipendText}}
+            </div>
+
+            {{#if expectedOutput}}
+            <div class="highlight">
+                <strong>Key Responsibilities & Expected Output:</strong><br>
+                {{expectedOutput}}
+            </div>
+            {{/if}}
+
+            <p>This internship program is designed to provide you with hands-on experience in a professional environment. You will have the opportunity to work closely with our experienced team members, contribute to real-world projects, and gain exposure to industry best practices and cutting-edge technologies.</p>
+        </div>
+
+        <div class="terms">
+            <h3>Terms and Conditions:</h3>
+            <ol>
+                <li>This internship is for a period of <strong>{{duration}}</strong> commencing from <strong>{{startDate}}</strong>.</li>
+                <li>You will be required to work <strong>{{workingMode}}</strong> during this internship period.</li>
+                <li>The internship may be extended based on your performance and mutual agreement between both parties.</li>
+                <li>Upon successful completion of the internship, you will receive a <strong>Certificate of Completion</strong> from Pronttera Connect.</li>
+                <li>Either party may terminate this internship agreement with <strong>{{noticeDays}} days</strong> written notice.</li>
+                <li>All intellectual property, code, and work product created during this internship shall remain the exclusive property of Pronttera Connect.</li>
+                <li>You will be required to maintain strict confidentiality of all proprietary information, trade secrets, and business strategies of the company.</li>
+                <li>You must adhere to all company policies, code of conduct, and professional ethics during the internship period.</li>
+            </ol>
+        </div>
+
+        <div class="content">
+            <p>We kindly request you to confirm your acceptance of this offer by <strong>{{acceptByDate}}</strong> by responding to this email or contacting our HR department.</p>
+            
+            <p>We are excited about the possibility of you joining our team and contributing to our ongoing projects. Your skills and enthusiasm would be valuable assets to our organization.</p>
+            
+            <p>Should you have any questions or require clarification regarding any aspect of this offer, please do not hesitate to contact us.</p>
+        </div>
+
+        <div class="signature">
+            <p>Best regards,</p>
+            <br><br>
+            <div style="border-top: 1px solid #2c3e50; padding-top: 10px; width: 300px;">
+                <p style="margin: 0;"><strong>HR Team</strong></p>
+                <p style="margin: 5px 0;">Pronttera Connect</p>
+                <p style="margin: 5px 0; font-size: 14px;">Email: hr@pronttera.com</p>
+                <p style="margin: 5px 0; font-size: 14px;">Phone: +91-XXXXXXXXXX</p>
+                <p style="margin: 5px 0; font-size: 14px;">Website: www.pronttera.com</p>
+            </div>
+        </div>
+
+        <div class="company-info">
+            <p><strong>About Pronttera Connect:</strong></p>
+            <p>Pronttera Connect is a leading technology solutions company specializing in innovative digital transformation services. We are committed to nurturing young talent and providing meaningful internship experiences that shape future technology leaders.</p>
+        </div>
+
+        <div class="footer">
+            <p>This is a computer-generated document. No signature required.</p>
+            <p>Confidential - For internal use only</p>
+        </div>
+    </div>
+</body>
+</html>
